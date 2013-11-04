@@ -1,5 +1,6 @@
-# grunt-release
-[Grunt](http://gruntjs.com) plugin for automating all the release steps of your node lib or bower component, with optional publishing to npm.  
+# grunt-releaser
+[Grunt](http://gruntjs.com) plugin for automating all the release steps of your node lib or bower component, with optional publishing to npm.
+Fork of [grunt-release](https://github.com/thomsonreuters/grunt-release) with functionality to release some files to package manager(`releaseFolder` and bower.json/package.json are released to corresponding package manager)
 
 ## Repetition Killed the Cat
 Releasing a new version of your killer Node/Bower/Component/JS lib looks something like this:
@@ -24,16 +25,16 @@ Done. No more github issues reminding you how often you forget to do one or more
 If you haven't used [Grunt](http://gruntjs.com/) before, be sure to check out the [Getting Started](http://gruntjs.com/getting-started) guide, as it explains how to create a [Gruntfile](http://gruntjs.com/sample-gruntfile) as well as install and use Grunt plugins. Once you're familiar with that process, you may install this plugin with this command:
 
 ```shell
-npm install grunt-release --save-dev
+npm install grunt-releaser --save-dev
 ```
 
 Once the plugin has been installed, it may be enabled inside your Gruntfile with this line of JavaScript:
 
 ```js
-grunt.loadNpmTasks('grunt-release');
+grunt.loadNpmTasks('grunt-releaser');
 ```
 
-## Using grunt-release
+## Using grunt-releaser
 
 **Patch Release:**
 ```shell
@@ -65,7 +66,7 @@ Example: add `-alpha.0` to get something like `1.0.0-alpha.0`. Calling `grunt re
 
 **Releasing Unstable/Beta Versions**
 Sometimes it is useful to publish an 'unstable' or 'beta' version to `npm`, while leaving your last stable release as the default that gets installed on an `npm install`. 
-`npm` accomplishes this using the `--tag myUnstableVersion` flag. You can enable this flag in grunt-release either by setting the `npmtag` option:
+`npm` accomplishes this using the `--tag myUnstableVersion` flag. You can enable this flag in grunt-releaser either by setting the `npmtag` option:
 
 ```js
   release: {
@@ -85,7 +86,7 @@ NOTE: If the tag you pass is **true**, then the tag will be the *new* version nu
 
 
 **Dry Run:**
-To see what grunt-release does, without really changing anything, use `--no-write` option.
+To see what grunt-releaser does, without really changing anything, use `--no-write` option.
 
 ```shell
 grunt --no-write -v release
@@ -128,7 +129,8 @@ The following are all the release steps, you can disable any you need to:
         repo: 'geddski/grunt-release', //put your user/repo here
         usernameVar: 'GITHUB_USERNAME', //ENVIRONMENT VARIABLE that contains Github username 
         passwordVar: 'GITHUB_PASSWORD' //ENVIRONMENT VARIABLE that contains Github password
-      }
+      },
+      releaseFolder: null //folder to release to(added to .gitignore and force added in release commits only)
     }
   }
 ```
