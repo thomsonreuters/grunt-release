@@ -8,10 +8,11 @@
 
 var shell = require('shelljs');
 var semver = require('semver');
+var _ = require('lodash');
 
 module.exports = function(grunt){
   grunt.registerTask('release', 'bump version, git tag, git push, npm publish', function(type){
-    
+
     //defaults
     var options = this.options({
       bump: true,
@@ -21,7 +22,8 @@ module.exports = function(grunt){
       tag: true,
       push: true,
       pushTags: true,
-      npm : true
+      npm : true,
+      releaseFolder : null
     });
 
     var config = setup(options.file, type);
@@ -35,6 +37,15 @@ module.exports = function(grunt){
     var tagMessage = grunt.template.process(grunt.config.getRaw('release.options.tagMessage') || 'version <%= version %>', templateOptions);
     var nowrite = grunt.option('no-write');
     var task = this;
+
+    if (!isAllChangesCommited()) {
+      grunt.fail.warn('All files should be commited before release');
+    }
+
+    if (options.releaseFolder) {
+      ensureFolderInGitignore(options.releaseFolder);
+      addFolder(options.releaseFolder);
+    }
 
     if (options.bump) bump(config);
     if (options.add) add(config);
@@ -54,12 +65,42 @@ module.exports = function(grunt){
       return {file: file, pkg: pkg, newVersion: newVersion};
     }
 
+    function isAllChangesCommited() {
+      var uncommitedFileCount = shell.exec('git status -s | wc -l');
+      return uncommitedFileCount.code === 0 && uncommitedFileCount.output.replace(/(\r\n|\n|\r)/gm,'') === '0';
+    }
+
+    function ensureFolderInGitignore(folder) {
+      var gitignoreContent;
+
+      if (!shell.test('-f', '.gitignore')) {
+        grunt.fail.warn('.gitignore does not exist on filesystem or not a file');
+      }
+
+      if (!shell.test('-d', folder)) {
+        grunt.fail.warn('Release folder "' + folder + '" does not exist on filesystem or not directory');
+      }
+
+      try {
+        gitignoreContent = grunt.file.read('.gitignore').split('\n');
+
+        if (!_.contains(gitignoreContent, folder)) {
+          gitignoreContent.unshift(folder);
+          grunt.file.write('.gitignore', gitignoreContent.join('\n'));
+          shell.exec('git add .gitignore');
+        }
+      } catch (e) {
+        shell.exec('git reset --hard');
+        grunt.fail.warn('failed to add folder ' + folder + ' to .gitignore' + e);
+      }
+    }
+
     function add(config){
       run('git add ' + config.file);
     }
 
     function commit(config){
-      run('git commit '+ config.file +' -m "'+ commitMessage +'"', config.file + ' committed');
+      run('git commit -m "'+ commitMessage +'"', config.file + ' committed');
     }
 
     function tag(config){
@@ -78,7 +119,7 @@ module.exports = function(grunt){
       var cmd = 'npm publish';
       var msg = 'published '+ config.newVersion +' to npm';
       var npmtag = getNpmTag();
-      if (npmtag){ 
+      if (npmtag){
         cmd += ' --tag ' + npmtag;
         msg += ' with a tag of "' + npmtag + '"';
       }
@@ -110,6 +151,10 @@ module.exports = function(grunt){
       grunt.log.ok('Version bumped to ' + config.newVersion);
     }
 
+    function addFolder(folder){
+      shell.exec('git add -f ' + folder);
+    }
+
     function githubRelease(){
       var request = require('superagent');
       var done = task.async();
@@ -127,7 +172,7 @@ module.exports = function(grunt){
         .end(function(res){
           if (res.statusCode === 201){
             success();
-          } 
+          }
           else {
             grunt.fail.warn('Error creating github release. Response: ' + res.text);
           }
