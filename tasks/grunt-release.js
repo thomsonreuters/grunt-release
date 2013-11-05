@@ -8,7 +8,6 @@
 
 var shell = require('shelljs');
 var semver = require('semver');
-var _ = require('lodash');
 
 module.exports = function(grunt){
   grunt.registerTask('release', 'bump version, git tag, git push, npm publish', function(type){
@@ -38,12 +37,16 @@ module.exports = function(grunt){
     var nowrite = grunt.option('no-write');
     var task = this;
 
+    if (options.releaseFolder) {
+      ensureFolderInGitignore(options.releaseFolder);
+    }
+
     if (!isAllChangesCommited()) {
-      grunt.fail.warn('All files should be commited before release');
+      grunt.fail.warn('There should be no dirty/uncommited changes');
     }
 
     if (options.releaseFolder) {
-      ensureFolderInGitignore(options.releaseFolder);
+      ensureSingleFolderDistributed(config, options.releaseFolder);
       addFolder(options.releaseFolder);
     }
 
@@ -66,32 +69,48 @@ module.exports = function(grunt){
     }
 
     function isAllChangesCommited() {
-      var uncommitedFileCount = shell.exec('git status -s | wc -l');
-      return uncommitedFileCount.code === 0 && uncommitedFileCount.output.replace(/(\r\n|\n|\r)/gm,'') === '0';
+      var res = shell.exec('git status -s');
+
+      if (res.code === 0) {
+        return res.output.length === 0;
+      } else {
+        grunt.fail.warn('"git status -s" failed to execute, please check if git is installed');
+      }
     }
 
     function ensureFolderInGitignore(folder) {
       var gitignoreContent;
 
-      if (!shell.test('-f', '.gitignore')) {
+      if (!grunt.file.isFile('.gitignore')) {
         grunt.fail.warn('.gitignore does not exist on filesystem or not a file');
       }
 
-      if (!shell.test('-d', folder)) {
+      if (!grunt.file.isDir(folder)) {
         grunt.fail.warn('Release folder "' + folder + '" does not exist on filesystem or not directory');
       }
 
       try {
         gitignoreContent = grunt.file.read('.gitignore').split('\n');
 
-        if (!_.contains(gitignoreContent, folder)) {
+        if (gitignoreContent.indexOf(folder) === -1) {
           gitignoreContent.unshift(folder);
           grunt.file.write('.gitignore', gitignoreContent.join('\n'));
           shell.exec('git add .gitignore');
+          shell.exec('git commit -m "added "' + folder + '" folder to .gitignore"')
         }
       } catch (e) {
         shell.exec('git reset --hard');
         grunt.fail.warn('failed to add folder ' + folder + ' to .gitignore' + e);
+      }
+    }
+
+    function ensureSingleFolderDistributed(config, folder) {
+      if (config.file === 'bower.json') {
+        config.pkg.ignore = grunt.file.expand(['*', '!bower.json', '!' + folder]);
+      } else if (config.file === 'package.json') {
+        config.pkg.files = ['package.json', folder]
+      } else {
+        grunt.fail.warn('this plugin currently supports only bower.json and package.json');
       }
     }
 
