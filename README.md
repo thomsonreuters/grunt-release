@@ -129,7 +129,7 @@ The following are all the release steps, you can disable any you need to:
         usernameVar: 'GITHUB_USERNAME', //ENVIRONMENT VARIABLE that contains Github username 
         passwordVar: 'GITHUB_PASSWORD' //ENVIRONMENT VARIABLE that contains Github password
       },
-      releaseFolder: null //folder, which you use to release to(will be added to .gitignore and will be added in release commits only - usually a dist folder)
+      releaseFolder: null //folder to release to(added to .gitignore and force added in release commits only)
     }
   }
 ```
