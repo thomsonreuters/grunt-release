@@ -128,7 +128,8 @@ The following are all the release steps, you can disable any you need to:
         repo: 'geddski/grunt-release', //put your user/repo here
         usernameVar: 'GITHUB_USERNAME', //ENVIRONMENT VARIABLE that contains Github username 
         passwordVar: 'GITHUB_PASSWORD' //ENVIRONMENT VARIABLE that contains Github password
-      }
+      },
+      releaseFolder: null //folder to release to(added to .gitignore and force added in release commits only)
     }
   }
 ```

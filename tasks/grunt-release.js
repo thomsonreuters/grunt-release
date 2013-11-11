@@ -11,7 +11,7 @@ var semver = require('semver');
 
 module.exports = function(grunt){
   grunt.registerTask('release', 'bump version, git tag, git push, npm publish', function(type){
-    
+
     //defaults
     var options = this.options({
       bump: true,
@@ -21,7 +21,8 @@ module.exports = function(grunt){
       tag: true,
       push: true,
       pushTags: true,
-      npm : true
+      npm : true,
+      releaseFolder : null
     });
 
     var config = setup(options.file, type);
@@ -35,6 +36,19 @@ module.exports = function(grunt){
     var tagMessage = grunt.template.process(grunt.config.getRaw('release.options.tagMessage') || 'version <%= version %>', templateOptions);
     var nowrite = grunt.option('no-write');
     var task = this;
+
+    if (options.releaseFolder) {
+      ensureFolderInGitignore(options.releaseFolder);
+    }
+
+    if (!isAllChangesCommited()) {
+      grunt.fail.warn('There should be no dirty/uncommited changes');
+    }
+
+    if (options.releaseFolder) {
+      ensureSingleFolderDistributed(config, options.releaseFolder);
+      addFolder(options.releaseFolder);
+    }
 
     if (options.bump) bump(config);
     if (options.add) add(config);
@@ -54,12 +68,58 @@ module.exports = function(grunt){
       return {file: file, pkg: pkg, newVersion: newVersion};
     }
 
+    function isAllChangesCommited() {
+      var res = shell.exec('git status -s');
+
+      if (res.code === 0) {
+        return res.output.length === 0;
+      } else {
+        grunt.fail.warn('"git status -s" failed to execute, please check if git is installed');
+      }
+    }
+
+    function ensureFolderInGitignore(folder) {
+      var gitignoreContent;
+
+      if (!grunt.file.isFile('.gitignore')) {
+        grunt.fail.warn('.gitignore does not exist on filesystem or not a file');
+      }
+
+      if (!grunt.file.isDir(folder)) {
+        grunt.fail.warn('Release folder "' + folder + '" does not exist on filesystem or not directory');
+      }
+
+      try {
+        gitignoreContent = grunt.file.read('.gitignore').split('\n');
+
+        if (gitignoreContent.indexOf(folder) === -1) {
+          gitignoreContent.unshift(folder);
+          grunt.file.write('.gitignore', gitignoreContent.join('\n'));
+          shell.exec('git add .gitignore');
+          shell.exec('git commit -m "added "' + folder + '" folder to .gitignore"')
+        }
+      } catch (e) {
+        shell.exec('git reset --hard');
+        grunt.fail.warn('failed to add folder ' + folder + ' to .gitignore' + e);
+      }
+    }
+
+    function ensureSingleFolderDistributed(config, folder) {
+      if (config.file === 'bower.json') {
+        config.pkg.ignore = grunt.file.expand(['*', '!bower.json', '!' + folder]);
+      } else if (config.file === 'package.json') {
+        config.pkg.files = ['package.json', folder]
+      } else {
+        grunt.fail.warn('this plugin currently supports only bower.json and package.json');
+      }
+    }
+
     function add(config){
       run('git add ' + config.file);
     }
 
     function commit(config){
-      run('git commit '+ config.file +' -m "'+ commitMessage +'"', config.file + ' committed');
+      run('git commit -m "'+ commitMessage +'"', config.file + ' committed');
     }
 
     function tag(config){
@@ -78,7 +138,7 @@ module.exports = function(grunt){
       var cmd = 'npm publish';
       var msg = 'published '+ config.newVersion +' to npm';
       var npmtag = getNpmTag();
-      if (npmtag){ 
+      if (npmtag){
         cmd += ' --tag ' + npmtag;
         msg += ' with a tag of "' + npmtag + '"';
       }
@@ -110,6 +170,10 @@ module.exports = function(grunt){
       grunt.log.ok('Version bumped to ' + config.newVersion);
     }
 
+    function addFolder(folder){
+      shell.exec('git add -f ' + folder);
+    }
+
     function githubRelease(){
       var request = require('superagent');
       var done = task.async();
@@ -127,7 +191,7 @@ module.exports = function(grunt){
         .end(function(res){
           if (res.statusCode === 201){
             success();
-          } 
+          }
           else {
             grunt.fail.warn('Error creating github release. Response: ' + res.text);
           }
