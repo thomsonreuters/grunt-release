@@ -1,6 +1,6 @@
 {
   "name": "grunt-releaser",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Release a new version of your Node-based project",
   "main": "Gruntfile.js",
   "scripts": {
