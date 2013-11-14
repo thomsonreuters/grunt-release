@@ -79,7 +79,9 @@ module.exports = function(grunt){
     }
 
     function ensureFolderInGitignore(folder) {
-      var gitignoreContent;
+      var gitStatusCommand = 'git status -s ' + folder,
+          gitStatusResult,
+          gitignoreContent;
 
       if (!grunt.file.isFile('.gitignore')) {
         grunt.fail.warn('.gitignore does not exist on filesystem or not a file');
@@ -94,9 +96,21 @@ module.exports = function(grunt){
 
         if (gitignoreContent.indexOf(folder) === -1) {
           gitignoreContent.unshift(folder);
-          grunt.file.write('.gitignore', gitignoreContent.join('\n'));
-          shell.exec('git add .gitignore');
-          shell.exec('git commit -m "added "' + folder + '" folder to .gitignore"')
+
+          if (!nowrite) {
+            grunt.file.write('.gitignore', gitignoreContent.join('\n'));
+          }
+
+          run('git add .gitignore');
+          run('git commit -m "added "' + folder + '" folder to .gitignore"');
+
+          gitStatusResult = shell.exec(gitStatusCommand);
+          if (gitStatusResult.code === 0 && gitStatusResult.length !== 0) {
+            addFolder(folder);
+            run('git commit -m  "commited ' + folder  + ' folder changes"');
+          } else if (gitStatusResult.code !== 0) {
+            grunt.fail.warn('failed to run "' + gitStatusCommand + '"');
+          }
         }
       } catch (e) {
         shell.exec('git reset --hard');
@@ -171,7 +185,7 @@ module.exports = function(grunt){
     }
 
     function addFolder(folder){
-      shell.exec('git add -f ' + folder);
+      run('git add -uf ' + folder);
     }
 
     function githubRelease(){

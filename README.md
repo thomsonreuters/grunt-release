@@ -1,6 +1,7 @@
 # grunt-releaser
 [Grunt](http://gruntjs.com) plugin for automating all the release steps of your node lib or bower component, with optional publishing to npm.
-Fork of [grunt-release](https://github.com/thomsonreuters/grunt-release) with functionality to release some files to package manager(`releaseFolder` and bower.json/package.json are released to corresponding package manager)
+Fork of [grunt-release](https://github.com/thomsonreuters/grunt-release) with functionality to release some files to package manager from `releaseFolder` and bower.json/package.json are released to corresponding package manager.
+** Note ** if you use `releaseFolder` it's your responsibility to put the files into it before running `release` task(both `dist` folder or any other custom folder works for it)
 
 ## Repetition Killed the Cat
 Releasing a new version of your killer Node/Bower/Component/JS lib looks something like this:
