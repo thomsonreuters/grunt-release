@@ -78,6 +78,16 @@ module.exports = function(grunt){
       }
     }
 
+    function isFolderInGitIndex(folder) { //check if a folder was preivously in a git tree
+      var res = shell.exec('git ls-files ' + folder);
+
+      if (res.code === 0) {
+        return res.output.length !== 0;
+      } else {
+        grunt.fail.warn('"git status -s" failed to execute, please check if git is installed');
+      }
+    }
+
     function ensureFolderInGitignore(folder) {
       var gitStatusCommand = 'git status -s ' + folder,
           gitStatusResult,
@@ -115,6 +125,11 @@ module.exports = function(grunt){
       } catch (e) {
         shell.exec('git reset --hard');
         grunt.fail.warn('failed to add folder ' + folder + ' to .gitignore' + e);
+      }
+
+      if (isFolderInGitIndex(folder)) {
+        run('git rm -r --cached ' + folder);
+        run('git commit -m "removed "' + folder + '" from git index"');
       }
     }
 
