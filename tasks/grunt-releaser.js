@@ -25,6 +25,10 @@ module.exports = function(grunt){
       releaseFolder : null
     });
 
+    if (type !== 'major' && type !== 'minor' && type !== 'patch' && type !== 'prerelease' && type) {
+      grunt.fail.warn('Unknown target: "' + type + '"');
+    }
+
     var config = setup(options.file, type);
     var templateOptions = {
       data: {
@@ -137,7 +141,7 @@ module.exports = function(grunt){
       if (config.file === 'bower.json') {
         config.pkg.ignore = grunt.file.expand(['*', '!bower.json', '!' + folder]);
       } else if (config.file === 'package.json') {
-        config.pkg.files = ['package.json', folder]
+        config.pkg.files = ['package.json', folder];
       } else {
         grunt.fail.warn('this plugin currently supports only bower.json and package.json');
       }
