@@ -175,23 +175,33 @@ module.exports = function(grunt){
         cmd += ' --tag ' + npmtag;
         msg += ' with a tag of "' + npmtag + '"';
       }
-      if (options.folder){ cmd += ' ' + options.folder }
+      if (options.folder){
+        cmd += ' ' + options.folder;
+      }
       run(cmd, msg);
     }
 
     function getNpmTag(){
       var tag = grunt.option('npmtag') || options.npmtag;
-      if(tag === true) { tag = config.newVersion }
+      if(tag === true) {
+        tag = config.newVersion;
+      }
       return tag;
     }
 
     function run(cmd, msg){
+      var cmdResult;
+
       if (nowrite) {
         grunt.verbose.writeln('Not actually running: ' + cmd);
       }
       else {
         grunt.verbose.writeln('Running: ' + cmd);
-        shell.exec(cmd, {silent:true});
+        cmdResult = shell.exec(cmd, {silent:true});
+
+        if (cmdResult.code !== 0) {
+          grunt.fail.warn('Failed to run "' + cmd + '", error: "' + cmdResult.output + '"');
+        }
       }
 
       if (msg) grunt.log.ok(msg);
